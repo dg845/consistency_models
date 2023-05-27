@@ -24,14 +24,14 @@ from karras_diffusion import karras_sample
 
 
 def main():
-    # args = create_argparser().parse_args()
-    # d = vars(args)
+    args = create_argparser().parse_args()
+    d = vars(args)
     # convert the args into a dict
 
     # print(d)
     # exit()
-    # with open("config.json", "w") as fp:
-    #     json.dump(d , fp) 
+    with open("config.json", "w") as fp:
+        json.dump(d , fp) 
     # exit()
     args = json.load(open("config.json"))
     # print(d.training_mode)
