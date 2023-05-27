@@ -1,6 +1,9 @@
 import torch as th
 import torch.distributed as dist
-from . import dist_util
+# from . import dist_util
+
+
+device = "cuda"
 
 
 def get_generator(generator, num_samples=0, seed=0):
@@ -44,7 +47,8 @@ class DeterministicGenerator:
         self.seed = seed
         self.rng_cpu = th.Generator()
         if th.cuda.is_available():
-            self.rng_cuda = th.Generator(dist_util.dev())
+            # self.rng_cuda = th.Generator(dist_util.dev())
+            self.rng_cuda = th.Generator(device)
         self.set_seed(seed)
 
     def get_global_size_and_indices(self, size):
@@ -113,7 +117,8 @@ class DeterministicIndividualGenerator:
         self.seed = seed
         self.rng_cpu = [th.Generator() for _ in range(num_samples)]
         if th.cuda.is_available():
-            self.rng_cuda = [th.Generator(dist_util.dev()) for _ in range(num_samples)]
+            # self.rng_cuda = [th.Generator(dist_util.dev()) for _ in range(num_samples)]
+            self.rng_cuda = [th.Generator(device) for _ in range(num_samples)]
         self.set_seed(seed)
 
     def get_size_and_indices(self, size):
