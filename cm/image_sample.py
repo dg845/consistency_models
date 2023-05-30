@@ -98,8 +98,14 @@ def main():
             generator=generator,
             ts=ts,
         )
-        sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
+        # sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
+        # sample = sample.permute(0, 2, 3, 1)
+        sample = (sample / 2 + 0.5).clamp(0, 1)
         sample = sample.permute(0, 2, 3, 1)
+        # Get image slice
+        sample_slice = sample[0, -3:, -3:, -1]
+        print(sample_slice)
+        sample = (sample * 255).to(th.uint8)
         sample = sample.contiguous()
 
         # gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
