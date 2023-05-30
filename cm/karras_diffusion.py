@@ -13,7 +13,8 @@ from torchvision.transforms import RandomCrop
 
 # from .nn import mean_flat, append_dims, append_zero
 # from .random_util import get_generator
-device = 'cuda'
+# device = 'cuda'
+device = 'cpu'  # For testing
 
 from nn import mean_flat, append_dims, append_zero
 from random_util import get_generator

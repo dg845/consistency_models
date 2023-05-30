@@ -52,7 +52,8 @@ def main():
         **model_keys,
         distillation=distillation,
     )
-    dev = 'cuda'
+    # dev = 'cuda'
+    dev = 'cpu'  # For testing
     model.load_state_dict(
         th.load(args["model_path"], map_location="cpu")
     )
@@ -103,7 +104,7 @@ def main():
         sample = (sample / 2 + 0.5).clamp(0, 1)
         sample = sample.permute(0, 2, 3, 1)
         # Get image slice
-        sample_slice = sample[0, -3:, -3:, -1]
+        sample_slice = sample[0, -3:, -3:, -1].flatten()
         print(sample_slice)
         sample = (sample * 255).to(th.uint8)
         sample = sample.contiguous()
