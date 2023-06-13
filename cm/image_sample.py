@@ -52,8 +52,8 @@ def main():
         **model_keys,
         distillation=distillation,
     )
-    # dev = 'cuda'
-    dev = 'cpu'  # For testing
+    dev = 'cuda'
+    # dev = 'cpu'  # For testing
     model.load_state_dict(
         th.load(args["model_path"], map_location="cpu")
     )
@@ -76,9 +76,17 @@ def main():
     while len(all_images) * args["batch_size"] < args["num_samples"]:
         model_kwargs = {}
         if args["class_cond"]:
-            classes = th.randint(
-                low=0, high=NUM_CLASSES, size=(args["batch_size"],), device=dev
-            )
+            # classes = th.randint(
+            #     low=0, high=NUM_CLASSES, size=(args["batch_size"],), device=dev
+            # )
+            # Use generator to get random class labels for consistency
+            # classes = generator.randint(
+            #     low=0, high=NUM_CLASSES, size=(args["batch_size"],), device=dev
+            # )
+            # Use hard-coded class label
+            classes = th.tensor([0], device=dev)
+            # print(f"Classes: {classes}")
+            # print(f"Classes shape: {classes.shape}")
             model_kwargs["y"] = classes
 
         sample = karras_sample(

@@ -13,8 +13,8 @@ from torchvision.transforms import RandomCrop
 
 # from .nn import mean_flat, append_dims, append_zero
 # from .random_util import get_generator
-# device = 'cuda'
-device = 'cpu'  # For testing
+device = 'cuda'
+# device = 'cpu'  # For testing
 
 from nn import mean_flat, append_dims, append_zero
 from random_util import get_generator
@@ -383,7 +383,16 @@ def karras_sample(
     else:
         sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
 
-    x_T = generator.randn(*shape, device=device) * sigma_max
+    # x_T = generator.randn(*shape, device=device) * sigma_max
+    # Hardcode new latent generator for sampling
+    latent_generator = get_generator("determ-indiv", 1, 0)
+    x_T = latent_generator.randn(*shape, device=device) * sigma_max
+
+    # x_T = generator.randn(*shape, device="cpu") * sigma_max
+    # x_T = x_T.to(device)
+    
+    # print(f"Latents: {x_T}")
+    # print(f"Latents shape: {x_T.shape}")
 
     sample_fn = {
         "heun": sample_heun,
@@ -677,11 +686,27 @@ def stochastic_iterative_sampler(
     s_in = x.new_ones([x.shape[0]])
 
     for i in range(len(ts) - 1):
+        # print(f"Step {i} / Timestep {ts[i]}")
         t = (t_max_rho + ts[i] / (steps - 1) * (t_min_rho - t_max_rho)) ** rho
         x0 = distiller(x, t * s_in)
         next_t = (t_max_rho + ts[i + 1] / (steps - 1) * (t_min_rho - t_max_rho)) ** rho
         next_t = np.clip(next_t, t_min, t_max)
-        x = x0 + generator.randn_like(x) * np.sqrt(next_t**2 - t_min**2)
+        # x = x0 + generator.randn_like(x) * np.sqrt(next_t**2 - t_min**2)
+        device = x.device
+        # x_cpu = x.to("cpu")
+        # x_fp16 = x.to(dtype=th.float16)
+        x_cpu_fp16 = x.to(device="cpu", dtype=th.float16)
+        # noise = generator.randn_like(x_cpu)
+        # noise = generator.randn_like(x_fp16)
+        noise = generator.randn_like(x_cpu_fp16)
+        # noise = generator.randn(*x.shape, dtype=th.float16, device=x.device)
+        noise = noise.to(device)
+        # print(f"\tNoise: {noise}")
+        # print(f"\tNoise shape: {noise.shape}")
+        noise = noise.to(dtype=th.float)
+        x = x0 + noise * np.sqrt(next_t**2 - t_min**2)
+        # print(f"\tNew Sample: {x}")
+        # print(f"\tNew Sample shape: {x.shape}")
 
     return x
 

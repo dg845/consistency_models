@@ -272,7 +272,7 @@ class AttentionBlock(nn.Module):
         num_heads=1,
         num_head_channels=-1,
         use_checkpoint=False,
-        attention_type="normal", # normal, flash
+        attention_type="flash", # normal, flash
         encoder_channels=None,
         dims=2,
         channels_last=False,
@@ -292,8 +292,8 @@ class AttentionBlock(nn.Module):
         self.qkv = conv_nd(dims, channels, channels * 3, 1)
         self.attention_type = attention_type
         if attention_type == "flash":
-            # self.attention = QKVFlashAttention(channels, self.num_heads)
-            pass
+            self.attention = QKVFlashAttention(channels, self.num_heads)
+            # pass
         else:
             # split heads before split qkv
             self.attention = QKVAttentionLegacy(self.num_heads)
@@ -331,50 +331,52 @@ class AttentionBlock(nn.Module):
         return x + h
 
 
-# class QKVFlashAttention(nn.Module):
-#     def __init__(
-#         self,
-#         embed_dim,
-#         num_heads,
-#         batch_first=True,
-#         attention_dropout=0.0,
-#         causal=False,
-#         device=None,
-#         dtype=None,
-#         **kwargs,
-#     ) -> None:
-#         from einops import rearrange
-#         from flash_attn.flash_attention import FlashAttention
+class QKVFlashAttention(nn.Module):
+    def __init__(
+        self,
+        embed_dim,
+        num_heads,
+        batch_first=True,
+        attention_dropout=0.0,
+        causal=False,
+        device=None,
+        dtype=None,
+        **kwargs,
+    ) -> None:
+        from einops import rearrange
+        from flash_attn.flash_attention import FlashAttention
 
-#         assert batch_first
-#         factory_kwargs = {"device": device, "dtype": dtype}
-#         super().__init__()
-#         self.embed_dim = embed_dim
-#         self.num_heads = num_heads
-#         self.causal = causal
+        assert batch_first
+        # factory_kwargs = {"device": device, "dtype": dtype}
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.causal = causal
 
-#         assert (
-#             self.embed_dim % num_heads == 0
-#         ), "self.kdim must be divisible by num_heads"
-#         self.head_dim = self.embed_dim // num_heads
-#         assert self.head_dim in [16, 32, 64], "Only support head_dim == 16, 32, or 64"
+        assert (
+            self.embed_dim % num_heads == 0
+        ), "self.kdim must be divisible by num_heads"
+        self.head_dim = self.embed_dim // num_heads
+        assert self.head_dim in [16, 32, 64], "Only support head_dim == 16, 32, or 64"
 
-#         self.inner_attn = FlashAttention(
-#             attention_dropout=attention_dropout, **factory_kwargs
-#         )
-#         self.rearrange = rearrange
+        self.inner_attn = FlashAttention(
+            attention_dropout=attention_dropout,
+        )
+        self.rearrange = rearrange
 
-#     def forward(self, qkv, attn_mask=None, key_padding_mask=None, need_weights=False):
-#         qkv = self.rearrange(
-#             qkv, "b (three h d) s -> b s three h d", three=3, h=self.num_heads
-#         )
-#         qkv, _ = self.inner_attn(
-#             qkv,
-#             key_padding_mask=key_padding_mask,
-#             need_weights=need_weights,
-#             causal=self.causal,
-#         )
-#         return self.rearrange(qkv, "b s h d -> b (h d) s")
+    def forward(self, qkv, attn_mask=None, key_padding_mask=None, need_weights=False):
+        # qkv = qkv.half()
+        qkv = self.rearrange(
+            qkv, "b (three h d) s -> b s three h d", three=3, h=self.num_heads
+        )
+        qkv, _ = self.inner_attn(
+            qkv.contiguous(),
+            key_padding_mask=key_padding_mask,
+            need_weights=need_weights,
+            causal=self.causal,
+        )
+        # qkv = qkv.float()
+        return self.rearrange(qkv, "b s h d -> b (h d) s")
 
 
 def count_flops_attn(model, _x, y):

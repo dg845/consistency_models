@@ -3,8 +3,8 @@ import torch.distributed as dist
 # from . import dist_util
 
 
-# device = "cuda"
-device = "cpu"  # For testing
+device = "cuda"
+# device = "cpu"  # For testing
 
 
 def get_generator(generator, num_samples=0, seed=0):
