@@ -76,9 +76,12 @@ def main():
     while len(all_images) * args["batch_size"] < args["num_samples"]:
         model_kwargs = {}
         if args["class_cond"]:
-            classes = th.randint(
-                low=0, high=NUM_CLASSES, size=(args["batch_size"],), device=dev
-            )
+            # classes = th.randint(
+            #     low=0, high=NUM_CLASSES, size=(args["batch_size"],), device=dev
+            # )
+            classes = th.tensor([0], device=dev)
+            print(f"Classes: {classes}")
+            print(f"Classes shape: {classes.shape}")
             model_kwargs["y"] = classes
 
         sample = karras_sample(

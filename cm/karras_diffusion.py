@@ -385,6 +385,9 @@ def karras_sample(
 
     x_T = generator.randn(*shape, device=device) * sigma_max
 
+    print(f"Latents: {x_T}")
+    print(f"Latents shape: {x_T.shape}")
+
     sample_fn = {
         "heun": sample_heun,
         "dpm": sample_dpm,
@@ -677,12 +680,18 @@ def stochastic_iterative_sampler(
     s_in = x.new_ones([x.shape[0]])
 
     for i in range(len(ts) - 1):
+        # print(f"Step {i} / Timestep {ts[i]}")
         t = (t_max_rho + ts[i] / (steps - 1) * (t_min_rho - t_max_rho)) ** rho
         x0 = distiller(x, t * s_in)
         next_t = (t_max_rho + ts[i + 1] / (steps - 1) * (t_min_rho - t_max_rho)) ** rho
         next_t = np.clip(next_t, t_min, t_max)
         x = x0 + generator.randn_like(x) * np.sqrt(next_t**2 - t_min**2)
-
+        # noise = generator.randn_like(x)
+        # print(f"\tNoise: {noise}")
+        # print(f"\tNoise shape: {noise.shape}")
+        # x = x0 + noise * np.sqrt(next_t**2 - t_min**2)
+        # print(f"\tNew Sample: {x}")
+        # print(f"\tNew Sample shape: {x.shape}")
     return x
 
 
