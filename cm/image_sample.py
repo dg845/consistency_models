@@ -85,8 +85,8 @@ def main():
             # )
             # Use hard-coded class label
             classes = th.tensor([0], device=dev)
-            # print(f"Classes: {classes}")
-            # print(f"Classes shape: {classes.shape}")
+            print(f"Classes: {classes}")
+            print(f"Classes shape: {classes.shape}")
             model_kwargs["y"] = classes
 
         sample = karras_sample(
