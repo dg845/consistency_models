@@ -383,10 +383,22 @@ def karras_sample(
     else:
         sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
 
-    x_T = generator.randn(*shape, device=device) * sigma_max
+    # x_T = generator.randn(*shape, device=device) * sigma_max
 
-    print(f"Latents: {x_T}")
-    print(f"Latents shape: {x_T.shape}")
+    # Get deterministic sample
+    batch_size = shape[0]
+    num_channels = shape[1]
+    image_size = shape[2]
+    num_elems = batch_size * num_channels * image_size * image_size
+    sample = th.arange(num_elems)
+    sample = sample.reshape(num_channels, image_size, image_size, batch_size)
+    sample = sample / num_elems
+    sample = sample.permute(3, 0, 1, 2)
+
+    x_T = sample * sigma_max
+
+    # print(f"Latents: {x_T}")
+    # print(f"Latents shape: {x_T.shape}")
 
     sample_fn = {
         "heun": sample_heun,
